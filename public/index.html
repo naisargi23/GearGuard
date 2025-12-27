@@ -1,0 +1,4730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GearGuard - Role Based Authentication</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        body:not(.dashboard-mode) {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 1200px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 1rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #666;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .error {
+            color: #e74c3c;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .success {
+            color: #27ae60;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        h2 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #333;
+        }
+
+        /* Dashboard Styles */
+        .dashboard-container {
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding: 0;
+            width: 100%;
+        }
+
+        body.dashboard-mode {
+            background: #f8f9fa;
+        }
+
+        body.dashboard-mode .container {
+            display: none !important;
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .dashboard-nav {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 0.5rem 1rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-btn:hover {
+            color: #667eea;
+        }
+
+        .nav-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: 600;
+        }
+
+        .dashboard-content {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
+        .stat-card.critical {
+            border-left: 4px solid #dc3545;
+        }
+
+        .stat-card.warning {
+            border-left: 4px solid #ffc107;
+        }
+
+        .stat-card.success {
+            border-left: 4px solid #28a745;
+        }
+
+        .stat-card.info {
+            border-left: 4px solid #17a2b8;
+        }
+
+        .stat-title {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-subtitle {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+        .workflow-stages {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .workflow-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+
+        .workflow-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .workflow-stage {
+            flex: 1;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .stage-card {
+            padding: 1.5rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            color: white;
+            font-weight: 600;
+        }
+
+        .stage-card.new {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .stage-card.progress {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        }
+
+        .stage-card.completed {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .stage-card.scrap {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .stage-number {
+            font-size: 1.75rem;
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .stage-label {
+            font-size: 0.875rem;
+            opacity: 0.95;
+        }
+
+        .workflow-arrow {
+            font-size: 1.5rem;
+            color: #dee2e6;
+            flex-shrink: 0;
+        }
+
+        .data-table-container {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .table-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .search-box {
+            padding: 0.5rem 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            font-size: 0.875rem;
+            width: 250px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.875rem;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .data-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #f0f0f0;
+            color: #495057;
+            font-size: 0.875rem;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .admin-view {
+            width: 100%;
+        }
+
+        .admin-view.hidden {
+            display: none;
+        }
+
+        .role-view {
+            width: 100%;
+        }
+
+        .role-view.hidden {
+            display: none;
+        }
+
+        /* Teams Card View Styles */
+        .teams-header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .teams-title-section h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #333;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .teams-title-section p {
+            color: #6c757d;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .create-team-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .create-team-btn:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+
+        .teams-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .team-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .team-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            transform: translateY(-2px);
+        }
+
+        .team-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .team-card-title-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .team-icon {
+            width: 40px;
+            height: 40px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #667eea;
+            font-size: 1.25rem;
+        }
+
+        .team-title-info h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .team-title-info p {
+            margin: 0.25rem 0 0 0;
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+        .team-card-chevron {
+            color: #9e9e9e;
+            font-size: 1.25rem;
+            cursor: pointer;
+        }
+
+        .team-active-requests {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .active-requests-badge {
+            background: #f5f5f5;
+            color: #666;
+            padding: 0.5rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .active-requests-badge .icon {
+            font-size: 1rem;
+        }
+
+        .request-count-badge {
+            background: #667eea;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .team-members-section {
+            margin-top: 1.5rem;
+        }
+
+        .team-members-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .team-member-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .team-member-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .member-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e3f2fd;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+
+        .member-info h4 {
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .member-info p {
+            margin: 0.25rem 0 0 0;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        /* Reports View Styles */
+        .reports-header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+        }
+
+        .reports-title-section h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #333;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .reports-title-section p {
+            color: #6c757d;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .reports-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .report-action-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+            border: 1px solid #dee2e6;
+            background: white;
+            color: #495057;
+        }
+
+        .report-action-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .report-action-btn.primary {
+            background: #667eea;
+            color: white;
+            border: none;
+        }
+
+        .report-action-btn.primary:hover {
+            background: #5568d3;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .chart-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Horizontal Bar Chart */
+        .bar-chart-container {
+            position: relative;
+            height: 200px;
+            padding: 1rem 0;
+        }
+
+        .bar-chart-y-axis {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding-right: 1rem;
+        }
+
+        .bar-chart-y-label {
+            font-size: 0.875rem;
+            color: #6c757d;
+            text-align: right;
+        }
+
+        .bar-chart-content {
+            margin-left: 100px;
+            height: 100%;
+            position: relative;
+        }
+
+        .bar-chart-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: space-between;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .bar-chart-grid-line {
+            width: 1px;
+            background: #e9ecef;
+            position: relative;
+        }
+
+        .bar-chart-grid-line::after {
+            content: attr(data-value);
+            position: absolute;
+            top: -1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+
+        .bar-chart-bars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            padding: 1rem 0;
+        }
+
+        .bar-chart-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            height: 50px;
+        }
+
+        .bar-chart-label {
+            width: 100px;
+            font-size: 0.875rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .bar-chart-bar-container {
+            flex: 1;
+            height: 30px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bar-chart-bar {
+            height: 100%;
+            background: #667eea;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 0.5rem;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Vertical Bar Chart */
+        .vertical-bar-chart {
+            height: 250px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            padding: 1rem;
+            gap: 2rem;
+            position: relative;
+        }
+
+        .vertical-bar-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .vertical-bar-container {
+            width: 100%;
+            height: 200px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .vertical-bar {
+            width: 100%;
+            background: #667eea;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.3s ease;
+            position: relative;
+        }
+
+        .vertical-bar-value {
+            position: absolute;
+            top: -1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .vertical-bar-label {
+            font-size: 0.875rem;
+            color: #6c757d;
+            text-align: center;
+        }
+
+        .vertical-chart-y-axis {
+            position: absolute;
+            left: -2rem;
+            top: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 1.5rem;
+        }
+
+        .vertical-chart-y-label {
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+
+        /* Donut Chart */
+        .donut-chart-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .donut-chart {
+            width: 200px;
+            height: 200px;
+            position: relative;
+        }
+
+        .donut-chart-svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .donut-segment {
+            transition: all 0.3s ease;
+        }
+
+        .donut-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .donut-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .donut-legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        /* Calendar View Styles */
+        .calendar-header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .calendar-title-section h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #333;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .calendar-title-section p {
+            color: #6c757d;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .calendar-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .calendar-nav-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            color: #495057;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-nav-btn:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+        }
+
+        .calendar-month-year {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            min-width: 180px;
+            text-align: center;
+        }
+
+        .calendar-view-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            background: white;
+            color: #495057;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-view-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .calendar-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .calendar-weekday {
+            text-align: center;
+            font-weight: 600;
+            color: #6c757d;
+            font-size: 0.875rem;
+            padding: 0.5rem;
+        }
+
+        .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            border: 1px solid #f0f0f0;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+            position: relative;
+        }
+
+        .calendar-day:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+        }
+
+        .calendar-day.other-month {
+            color: #d0d0d0;
+            background: #fafafa;
+        }
+
+        .calendar-day.today {
+            background: #e3f2fd;
+            border-color: #667eea;
+            font-weight: 600;
+        }
+
+        .calendar-day.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .calendar-day-number {
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .calendar-day-events {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            margin-top: 0.25rem;
+        }
+
+        .calendar-event {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            font-size: 0.7rem;
+            overflow: hidden;
+        }
+
+        .calendar-event.critical {
+            background: #dc3545;
+        }
+
+        .calendar-event.high {
+            background: #ffc107;
+        }
+
+        .calendar-event.medium {
+            background: #17a2b8;
+        }
+
+        .calendar-event.low {
+            background: #28a745;
+        }
+
+        .calendar-legend {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #f0f0f0;
+            flex-wrap: wrap;
+        }
+
+        .calendar-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .calendar-legend-color {
+            width: 16px;
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        /* Equipment View Styles */
+        .equipment-header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .equipment-title-section {
+            flex: 1;
+        }
+
+        .equipment-title-section h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #333;
+            margin: 0 0 0.25rem 0;
+            line-height: 1.2;
+        }
+
+        .equipment-title-section p {
+            color: #6c757d;
+            margin: 0;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .equipment-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .equipment-type-toggle {
+            display: flex;
+            gap: 0;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 0;
+            background: #f5f5f5;
+            overflow: hidden;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .equipment-type-btn {
+            padding: 0.625rem 1.25rem;
+            border: none;
+            background: transparent;
+            color: #495057;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 0;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .equipment-type-btn:first-child {
+            border-top-left-radius: 6px;
+            border-bottom-left-radius: 6px;
+        }
+
+        .equipment-type-btn:last-child {
+            border-top-right-radius: 6px;
+            border-bottom-right-radius: 6px;
+        }
+
+        .equipment-type-btn:hover:not(.active) {
+            background: #e9ecef;
+        }
+
+        .equipment-type-btn.active {
+            background: #667eea;
+            color: white;
+            box-shadow: 0 1px 3px rgba(102, 126, 234, 0.3);
+        }
+
+        .equipment-type-view {
+            display: block;
+        }
+
+        .equipment-type-view.hidden {
+            display: none;
+        }
+
+        .workcenter-header-actions,
+        .machine-tools-header-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 1rem;
+        }
+
+        .add-equipment-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.625rem 1.25rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+        }
+
+        .add-equipment-btn:hover {
+            background: #5568d3;
+            box-shadow: 0 3px 6px rgba(102, 126, 234, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .add-equipment-btn:active {
+            transform: translateY(0);
+        }
+
+        .add-equipment-btn span {
+            font-size: 1.1rem;
+            font-weight: 300;
+            line-height: 1;
+        }
+
+        .equipment-filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .equipment-search {
+            flex: 1;
+            min-width: 300px;
+            position: relative;
+        }
+
+        .equipment-search .search-icon {
+            position: absolute;
+            left: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            font-size: 1rem;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .equipment-search input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        .equipment-search input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .equipment-search input::placeholder {
+            color: #adb5bd;
+        }
+
+        .filter-dropdown {
+            padding: 0.75rem 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            color: #495057;
+            min-width: 150px;
+        }
+
+        /* Equipment View Container with Sidebar */
+        .equipment-view-container {
+            display: flex;
+            gap: 1.5rem;
+            position: relative;
+        }
+
+        .equipment-main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .equipment-table-container {
+            background: white;
+            border-radius: 8px;
+            padding: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            overflow-x: auto;
+            border: 1px solid #e9ecef;
+        }
+
+        .equipment-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+
+        .equipment-table th {
+            background: #f8f9fa;
+            padding: 0.875rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #e9ecef;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .equipment-table th:first-child {
+            padding-left: 1.5rem;
+        }
+
+        .equipment-table th:last-child {
+            padding-right: 1.5rem;
+        }
+
+        .equipment-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+            color: #333;
+            font-size: 0.9rem;
+            vertical-align: middle;
+        }
+
+        .equipment-table td:first-child {
+            padding-left: 1.5rem;
+        }
+
+        .equipment-table td:last-child {
+            padding-right: 1.5rem;
+        }
+
+        .equipment-table tbody tr {
+            transition: background-color 0.15s ease;
+        }
+
+        .equipment-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .equipment-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .equipment-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .equipment-icon {
+            width: 40px;
+            height: 40px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #667eea;
+            font-size: 1.25rem;
+        }
+
+        .equipment-info h4 {
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .equipment-info p {
+            margin: 0.25rem 0 0 0;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .location-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #6c757d;
+        }
+
+        .team-badge {
+            background: #f0f0f0;
+            color: #495057;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .maintenance-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        .maintenance-badge {
+            background: #5568d3;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.25rem;
+        }
+
+        /* Equipment Sidebar Styles */
+        .equipment-sidebar {
+            width: 400px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 0;
+            position: sticky;
+            top: 1rem;
+            max-height: calc(100vh - 2rem);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .equipment-sidebar.hidden {
+            display: none;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .sidebar-equipment-icon {
+            width: 48px;
+            height: 48px;
+            background: #e3f2fd;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .sidebar-title-section {
+            flex: 1;
+        }
+
+        .sidebar-title-section h3 {
+            margin: 0 0 0.25rem 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .sidebar-title-section p {
+            margin: 0;
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+        .sidebar-close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #6c757d;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        .sidebar-close-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .sidebar-content {
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        .view-maintenance-btn {
+            width: 100%;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.875rem 1rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            transition: background-color 0.2s ease;
+        }
+
+        .view-maintenance-btn:hover {
+            background: #5568d3;
+        }
+
+        .maintenance-count-badge {
+            background: rgba(255,255,255,0.3);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .sidebar-section h4 {
+            margin: 0 0 1rem 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .sidebar-info-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            margin-top: 0.125rem;
+        }
+
+        .info-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .info-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .info-value {
+            font-size: 0.95rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .warranty-date {
+            font-weight: 600;
+        }
+
+        /* Maintenance Kanban View Styles */
+        .maintenance-header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+        }
+
+        .maintenance-title-section h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #333;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .maintenance-title-section p {
+            color: #6c757d;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .maintenance-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .view-toggle {
+            display: flex;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .view-toggle-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: white;
+            color: #495057;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .view-toggle-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+            color: #495057;
+            cursor: pointer;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .new-request-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow: auto;
+        }
+
+        .modal:not(.hidden) {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: auto;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .modal-content * {
+            pointer-events: auto;
+        }
+
+        .close-button,
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.75rem;
+            color: #6c757d;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            line-height: 1;
+            padding: 0;
+            z-index: 10;
+        }
+
+        .close-button:hover,
+        .close-modal:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .close-button:active,
+        .close-modal:active {
+            background: #e0e0e0;
+        }
+
+        .close-button:focus,
+        .close-modal:focus {
+            outline: 2px solid #667eea;
+            outline-offset: 2px;
+        }
+
+        .equipment-modal-content {
+            max-width: 900px;
+            width: 95%;
+        }
+
+        .equipment-form-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .equipment-form-left,
+        .equipment-form-right {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .equipment-form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .btn-secondary {
+            padding: 0.75rem 1.5rem;
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .equipment-form-columns {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #333;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .close-modal:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .kanban-column {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 1.5rem;
+            min-height: 500px;
+        }
+
+        .kanban-column-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .kanban-column-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .kanban-column-icon.new {
+            background: #6c757d;
+            color: white;
+        }
+
+        .kanban-column-icon.progress {
+            background: #667eea;
+            color: white;
+        }
+
+        .kanban-column-icon.repaired {
+            background: #28a745;
+            color: white;
+        }
+
+        .kanban-column-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .kanban-column-count {
+            background: #e9ecef;
+            color: #495057;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .kanban-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .kanban-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .kanban-card-urgent {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            width: 20px;
+            height: 20px;
+            background: #dc3545;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.75rem;
+        }
+
+        .kanban-card-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        .kanban-card-equipment {
+            color: #6c757d;
+            font-size: 0.875rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .kanban-card-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .kanban-card-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .kanban-card-assigned {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .kanban-card-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #e3f2fd;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .kanban-card-assignee-name {
+            font-size: 0.875rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .action-btn {
+            padding: 0.25rem 0.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            margin-right: 0.25rem;
+        }
+
+        .action-btn-view {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .action-btn-edit {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .action-btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .action-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
+        .action-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .action-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 1.5rem;
+        }
+
+        .form-section h4 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .btn-outline {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-outline:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-content {
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .workflow-container {
+                flex-direction: column;
+            }
+
+            .workflow-arrow {
+                transform: rotate(90deg);
+            }
+
+            .dashboard-nav {
+                flex-direction: column;
+            }
+
+            .teams-header-section {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .teams-cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .reports-header-section {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .equipment-header-section {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .equipment-view-container {
+                flex-direction: column;
+            }
+
+            .equipment-sidebar {
+                width: 100%;
+                position: relative;
+                max-height: none;
+            }
+
+            .equipment-filters {
+                flex-direction: column;
+            }
+
+            .maintenance-header-section {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .maintenance-actions {
+                flex-wrap: wrap;
+            }
+
+            .kanban-board {
+                grid-template-columns: 1fr;
+            }
+
+            .equipment-table-container {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>GearGuard Authentication</h2>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showLogin()">Login</button>
+            <button class="tab" onclick="showRegister()">Register</button>
+        </div>
+        
+        <!-- Login Form -->
+        <div id="loginForm">
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="loginRole">Login as Role</label>
+                    <select id="loginRole">
+                        <option value="">Select Role (Optional)</option>
+                        <option value="user">User</option>
+                        <option value="technician">Technician</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn">Login</button>
+                <div id="loginError" class="error hidden"></div>
+                <div id="loginSuccess" class="success hidden"></div>
+            </form>
+        </div>
+        
+        <!-- Register Form -->
+        <div id="registerForm" class="hidden">
+            <form onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label for="registerUsername">Username</label>
+                    <input type="text" id="registerUsername" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registerRole">Role</label>
+                    <select id="registerRole">
+                        <option value="user">User</option>
+                        <option value="technician">Technician</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn">Register</button>
+                <div id="registerError" class="error hidden"></div>
+                <div id="registerSuccess" class="success hidden"></div>
+            </form>
+        </div>
+        
+    </div>
+    
+    <!-- Dashboard -->
+    <div id="dashboard" class="hidden dashboard-container">
+        <div class="dashboard-header">
+            <h1>GearGuard Dashboard</h1>
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar"></div>
+                <div>
+                    <div style="font-weight: 600;"><span id="username"></span></div>
+                    <div style="font-size: 0.875rem; opacity: 0.9;"><span id="userRole"></span></div>
+                </div>
+                <button class="btn-sm btn-secondary" onclick="logout()" style="margin-left: 1rem;">Logout</button>
+            </div>
+        </div>
+        
+        <div id="roleContent"></div>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('token');
+        
+        // API Helper Functions
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            // Get fresh token from localStorage
+            const currentToken = localStorage.getItem('token') || token;
+            
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            if (currentToken) {
+                headers['Authorization'] = `Bearer ${currentToken}`;
+            }
+            
+            const options = {
+                method,
+                headers
+            };
+            
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+            
+            try {
+                const response = await fetch(endpoint, options);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || 'API request failed');
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+        
+        // Load Dashboard Data
+        async function loadDashboardData() {
+            try {
+                const [maintenanceData, equipmentData] = await Promise.all([
+                    apiCall('/api/maintenance'),
+                    apiCall('/api/equipment')
+                ]);
+                
+                const requests = maintenanceData.requests || [];
+                const equipment = equipmentData.equipment || [];
+                
+                // Calculate stats
+                const criticalEquipment = equipment.filter(eq => eq.maintenanceCount >= 3).length;
+                const openRequests = requests.filter(r => ['new', 'in-progress'].includes(r.status)).length;
+                const overdueRequests = requests.filter(r => {
+                    if (r.status === 'in-progress' && r.startDate) {
+                        const hours = (new Date() - new Date(r.startDate)) / (1000 * 60 * 60);
+                        return hours > 8;
+                    }
+                    return false;
+                }).length;
+                
+                // Count by status
+                const statusCounts = {
+                    new: requests.filter(r => r.status === 'new').length,
+                    'in-progress': requests.filter(r => r.status === 'in-progress').length,
+                    repaired: requests.filter(r => r.status === 'repaired').length,
+                    scrap: requests.filter(r => r.status === 'scrap').length
+                };
+                
+                return {
+                    criticalEquipment,
+                    openRequests,
+                    overdueRequests,
+                    totalEquipment: equipment.length,
+                    statusCounts,
+                    recentRequests: requests.slice(0, 5)
+                };
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                return {
+                    criticalEquipment: 0,
+                    openRequests: 0,
+                    overdueRequests: 0,
+                    totalEquipment: 0,
+                    statusCounts: { new: 0, 'in-progress': 0, repaired: 0, scrap: 0 },
+                    recentRequests: []
+                };
+            }
+        }
+        
+        // Load Equipment Data
+        async function loadEquipmentData() {
+            try {
+                const data = await apiCall('/api/equipment');
+                return data.equipment || [];
+            } catch (error) {
+                console.error('Error loading equipment:', error);
+                return [];
+            }
+        }
+        
+        // Load Maintenance Requests
+        async function loadMaintenanceRequests(status = null) {
+            try {
+                const endpoint = status ? `/api/maintenance?status=${status}` : '/api/maintenance';
+                const data = await apiCall(endpoint);
+                return data.requests || [];
+            } catch (error) {
+                console.error('Error loading maintenance requests:', error);
+                return [];
+            }
+        }
+        
+        // Load Teams Data
+        async function loadTeamsData() {
+            try {
+                const data = await apiCall('/api/teams');
+                return data.teams || [];
+            } catch (error) {
+                console.error('Error loading teams:', error);
+                return [];
+            }
+        }
+        
+        // Load Reports Data
+        async function loadReportsData() {
+            try {
+                const data = await apiCall('/api/reports');
+                return data.data || {};
+            } catch (error) {
+                console.error('Error loading reports:', error);
+                return {};
+            }
+        }
+        
+        function showLogin() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+            document.querySelectorAll('.tab')[0].classList.add('active');
+            document.querySelectorAll('.tab')[1].classList.remove('active');
+        }
+        
+        function showRegister() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+            document.querySelectorAll('.tab')[0].classList.remove('active');
+            document.querySelectorAll('.tab')[1].classList.add('active');
+        }
+        
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const selectedRole = document.getElementById('loginRole').value;
+            const errorDiv = document.getElementById('loginError');
+            const successDiv = document.getElementById('loginSuccess');
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                let data;
+                try {
+                    data = await response.json();
+                } catch (parseError) {
+                    errorDiv.textContent = 'Server returned invalid response. Please check if the server is running.';
+                    errorDiv.classList.remove('hidden');
+                    successDiv.classList.add('hidden');
+                    console.error('JSON parse error:', parseError);
+                    return;
+                }
+                
+                if (response.ok) {
+                    // Check if role was selected and matches user's role
+                    if (selectedRole && data.user.role !== selectedRole) {
+                        errorDiv.textContent = `Access denied. This account has ${data.user.role} role, not ${selectedRole} role.`;
+                        errorDiv.classList.remove('hidden');
+                        successDiv.classList.add('hidden');
+                        return;
+                    }
+                    
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    token = data.token;
+                    // Update global token for API calls
+                    window.token = data.token;
+                    await showDashboard();
+                    successDiv.textContent = 'Login successful!';
+                    successDiv.classList.remove('hidden');
+                    errorDiv.classList.add('hidden');
+                } else {
+                    const errorMessage = data.message || data.errors?.[0]?.msg || 'Login failed. Please try again.';
+                    errorDiv.textContent = errorMessage;
+                    errorDiv.classList.remove('hidden');
+                    successDiv.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorDiv.textContent = `Network error: ${error.message}. Please check if the server is running.`;
+                errorDiv.classList.remove('hidden');
+                successDiv.classList.add('hidden');
+            }
+        }
+        
+        async function handleRegister(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const role = document.getElementById('registerRole').value;
+            const errorDiv = document.getElementById('registerError');
+            const successDiv = document.getElementById('registerSuccess');
+            
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, email, password, role })
+                });
+                
+                let data;
+                try {
+                    data = await response.json();
+                } catch (parseError) {
+                    errorDiv.textContent = 'Server returned invalid response. Please check if the server is running.';
+                    errorDiv.classList.remove('hidden');
+                    successDiv.classList.add('hidden');
+                    console.error('JSON parse error:', parseError);
+                    return;
+                }
+                
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    token = data.token;
+                    // Update global token for API calls
+                    window.token = data.token;
+                    await showDashboard();
+                    successDiv.textContent = 'Registration successful!';
+                    successDiv.classList.remove('hidden');
+                    errorDiv.classList.add('hidden');
+                } else {
+                    const errorMessage = data.message || data.errors?.[0]?.msg || 'Registration failed';
+                    errorDiv.textContent = errorMessage;
+                    errorDiv.classList.remove('hidden');
+                    successDiv.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                errorDiv.textContent = `Network error: ${error.message}. Please check if the server is running.`;
+                errorDiv.classList.remove('hidden');
+                successDiv.classList.add('hidden');
+            }
+        }
+        
+        async function showDashboard() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            
+            document.body.classList.add('dashboard-mode');
+            const container = document.querySelector('.container');
+            if (container) {
+                container.style.display = 'none';
+            }
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.add('hidden'));
+            
+            document.getElementById('username').textContent = user.username;
+            document.getElementById('userRole').textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+            
+            // Set avatar initial
+            const avatar = document.getElementById('userAvatar');
+            if (avatar) {
+                avatar.textContent = user.username.charAt(0).toUpperCase();
+            }
+            
+            const roleContent = document.getElementById('roleContent');
+            
+            switch(user.role) {
+                case 'admin':
+                    // Load dashboard data
+                    const dashboardData = await loadDashboardData();
+                    roleContent.innerHTML = `
+                        <div class="dashboard-nav">
+                            <button class="nav-btn active" onclick="switchNav('dashboard', this)">Dashboard</button>
+                            <button class="nav-btn" onclick="switchNav('maintenance', this)">Maintenance</button>
+                            <button class="nav-btn" onclick="switchNav('calendar', this)">Maintenance Calendar</button>
+                            <button class="nav-btn" onclick="switchNav('equipment', this)">Equipment</button>
+                            <button class="nav-btn" onclick="switchNav('reporting', this)">Reporting</button>
+                            <button class="nav-btn" onclick="switchNav('teams', this)">Teams</button>
+                        </div>
+                        
+                        <!-- Dashboard View -->
+                        <div id="admin-dashboard-view" class="admin-view">
+                            <div class="stats-grid">
+                                <div class="stat-card critical">
+                                    <div class="stat-title">Critical Equipment</div>
+                                    <div class="stat-value" id="admin-critical-equipment">${dashboardData.criticalEquipment}</div>
+                                    <div class="stat-subtitle">Units with Health < 30%</div>
+                                </div>
+                                <div class="stat-card warning">
+                                    <div class="stat-title">Technician Load</div>
+                                    <div class="stat-value">85%</div>
+                                    <div class="stat-subtitle">Utilized (Assign Carefully)</div>
+                                </div>
+                                <div class="stat-card warning">
+                                    <div class="stat-title">Open Requests</div>
+                                    <div class="stat-value" id="admin-open-requests">${dashboardData.openRequests}</div>
+                                    <div class="stat-subtitle" id="admin-overdue">${dashboardData.overdueRequests} Overdue</div>
+                                </div>
+                                <div class="stat-card info">
+                                    <div class="stat-title">Total Equipment</div>
+                                    <div class="stat-value" id="admin-total-equipment">${dashboardData.totalEquipment}</div>
+                                    <div class="stat-subtitle">Active Units</div>
+                                </div>
+                            </div>
+
+                            <div class="workflow-stages">
+                                <div class="workflow-title">Maintenance Workflow</div>
+                                <div class="workflow-container">
+                                    <div class="workflow-stage">
+                                        <div class="stage-card new">
+                                            <div class="stage-number" id="workflow-new">${dashboardData.statusCounts.new || 0}</div>
+                                            <div class="stage-label">New Request</div>
+                                        </div>
+                                    </div>
+                                    <div class="workflow-arrow">→</div>
+                                    <div class="workflow-stage">
+                                        <div class="stage-card progress">
+                                            <div class="stage-number" id="workflow-progress">${dashboardData.statusCounts['in-progress'] || 0}</div>
+                                            <div class="stage-label">In Progress</div>
+                                        </div>
+                                    </div>
+                                    <div class="workflow-arrow">→</div>
+                                    <div class="workflow-stage">
+                                        <div class="stage-card completed">
+                                            <div class="stage-number" id="workflow-repaired">${dashboardData.statusCounts.repaired || 0}</div>
+                                            <div class="stage-label">Repaired</div>
+                                        </div>
+                                    </div>
+                                    <div class="workflow-arrow">→</div>
+                                    <div class="workflow-stage">
+                                        <div class="stage-card scrap">
+                                            <div class="stage-number" id="workflow-scrap">${dashboardData.statusCounts.scrap || 0}</div>
+                                            <div class="stage-label">Scrap</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="data-table-container">
+                                <div class="table-header">
+                                    <div class="table-title">Recent Maintenance Requests</div>
+                                    <div class="table-actions">
+                                        <input type="text" class="search-box" placeholder="Search requests..." id="admin-request-search">
+                                        <button class="btn-sm btn-primary" onclick="createNewRequest()">+ New Request</button>
+                                    </div>
+                                </div>
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Request ID</th>
+                                            <th>Equipment</th>
+                                            <th>Priority</th>
+                                            <th>Status</th>
+                                            <th>Assigned To</th>
+                                            <th>Created</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-requests-table-body">
+                                        ${renderRequestsTable(dashboardData.recentRequests)}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Teams View -->
+                        <div id="admin-teams-view" class="admin-view hidden">
+                            <div class="dashboard-content">
+                                <div class="teams-header-section">
+                                    <div class="teams-title-section">
+                                        <h2>Teams</h2>
+                                        <p>Manage maintenance teams and technicians.</p>
+                                    </div>
+                                    <button class="create-team-btn" onclick="createNewTeam()">
+                                        <span>+</span> Create Team
+                                    </button>
+                                </div>
+
+                                <div class="teams-cards-grid" id="teamsCardsGrid">
+                                    <div style="grid-column: 1/-1; text-align: center; padding: 2rem;">Loading teams...</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reports View -->
+                        <div id="admin-reporting-view" class="admin-view hidden">
+                            <div class="dashboard-content">
+                                <div class="reports-header-section">
+                                    <div class="reports-title-section">
+                                        <h2>Reports</h2>
+                                        <p>Analytics and insights for maintenance operations.</p>
+                                    </div>
+                                    <div class="reports-actions">
+                                        <button class="report-action-btn" onclick="refreshReports()">
+                                            <span>🔄</span> Refresh
+                                        </button>
+                                        <button class="report-action-btn primary" onclick="exportReports()">
+                                            <span>⬇️</span> Export
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="charts-grid">
+                                    <!-- Requests by Team Chart -->
+                                    <div class="chart-card">
+                                        <div class="chart-title">Requests by Team</div>
+                                        <div class="bar-chart-container">
+                                            <div class="bar-chart-y-axis">
+                                                <div class="bar-chart-y-label">4</div>
+                                                <div class="bar-chart-y-label">3</div>
+                                                <div class="bar-chart-y-label">2</div>
+                                                <div class="bar-chart-y-label">1</div>
+                                                <div class="bar-chart-y-label">0</div>
+                                            </div>
+                                            <div class="bar-chart-content">
+                                                <div class="bar-chart-grid">
+                                                    <div class="bar-chart-grid-line" data-value="0"></div>
+                                                    <div class="bar-chart-grid-line" data-value="1"></div>
+                                                    <div class="bar-chart-grid-line" data-value="2"></div>
+                                                    <div class="bar-chart-grid-line" data-value="3"></div>
+                                                    <div class="bar-chart-grid-line" data-value="4"></div>
+                                                </div>
+                                                <div class="bar-chart-bars">
+                                                    <div class="bar-chart-item">
+                                                        <div class="bar-chart-label">Mechanics</div>
+                                                        <div class="bar-chart-bar-container">
+                                                            <div class="bar-chart-bar" style="width: 100%;">4</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="bar-chart-item">
+                                                        <div class="bar-chart-label">Electricians</div>
+                                                        <div class="bar-chart-bar-container">
+                                                            <div class="bar-chart-bar" style="width: 50%;">2</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="bar-chart-item">
+                                                        <div class="bar-chart-label">IT Support</div>
+                                                        <div class="bar-chart-bar-container">
+                                                            <div class="bar-chart-bar" style="width: 0%;">0</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Requests by Status Donut Chart -->
+                                    <div class="chart-card">
+                                        <div class="chart-title">Requests by Status</div>
+                                        <div class="donut-chart-container">
+                                            <div class="donut-chart">
+                                                <svg class="donut-chart-svg" viewBox="0 0 100 100">
+                                                    <!-- New (Blue) - ~40% -->
+                                                    <circle class="donut-segment" cx="50" cy="50" r="40" fill="none" stroke="#667eea" stroke-width="15" 
+                                                            stroke-dasharray="100.5 251.2" stroke-dashoffset="0"></circle>
+                                                    <!-- In Progress (Green) - ~40% -->
+                                                    <circle class="donut-segment" cx="50" cy="50" r="40" fill="none" stroke="#28a745" stroke-width="15" 
+                                                            stroke-dasharray="100.5 251.2" stroke-dashoffset="-100.5"></circle>
+                                                    <!-- Repaired (Orange) - ~15% -->
+                                                    <circle class="donut-segment" cx="50" cy="50" r="40" fill="none" stroke="#ffc107" stroke-width="15" 
+                                                            stroke-dasharray="37.7 314" stroke-dashoffset="-201"></circle>
+                                                    <!-- Scrap (Red) - ~5% -->
+                                                    <circle class="donut-segment" cx="50" cy="50" r="40" fill="none" stroke="#dc3545" stroke-width="15" 
+                                                            stroke-dasharray="12.6 345.4" stroke-dashoffset="-238.7"></circle>
+                                                </svg>
+                                            </div>
+                                            <div class="donut-legend">
+                                                <div class="donut-legend-item">
+                                                    <div class="donut-legend-color" style="background: #667eea;"></div>
+                                                    <span>New</span>
+                                                </div>
+                                                <div class="donut-legend-item">
+                                                    <div class="donut-legend-color" style="background: #28a745;"></div>
+                                                    <span>In Progress</span>
+                                                </div>
+                                                <div class="donut-legend-item">
+                                                    <div class="donut-legend-color" style="background: #ffc107;"></div>
+                                                    <span>Repaired</span>
+                                                </div>
+                                                <div class="donut-legend-item">
+                                                    <div class="donut-legend-color" style="background: #dc3545;"></div>
+                                                    <span>Scrap</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Request Types Chart -->
+                                    <div class="chart-card">
+                                        <div class="chart-title">Request Types</div>
+                                        <div style="position: relative; height: 250px; padding-left: 2rem;">
+                                            <div class="vertical-chart-y-axis">
+                                                <div class="vertical-chart-y-label">4</div>
+                                                <div class="vertical-chart-y-label">3</div>
+                                                <div class="vertical-chart-y-label">2</div>
+                                                <div class="vertical-chart-y-label">1</div>
+                                                <div class="vertical-chart-y-label">0</div>
+                                            </div>
+                                            <div class="vertical-bar-chart">
+                                                <div class="vertical-bar-item">
+                                                    <div class="vertical-bar-container">
+                                                        <div class="vertical-bar" style="height: 100%;">
+                                                            <div class="vertical-bar-value">4</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="vertical-bar-label">Corrective</div>
+                                                </div>
+                                                <div class="vertical-bar-item">
+                                                    <div class="vertical-bar-container">
+                                                        <div class="vertical-bar" style="height: 50%;">
+                                                            <div class="vertical-bar-value">2</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="vertical-bar-label">Preventive</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Maintenance Calendar View -->
+                        <div id="admin-calendar-view" class="admin-view hidden">
+                            <div class="dashboard-content">
+                                <div class="calendar-header-section">
+                                    <div class="calendar-title-section">
+                                        <h2>Maintenance Calendar</h2>
+                                        <p>Schedule and track maintenance activities.</p>
+                                    </div>
+                                    <div class="calendar-controls">
+                                        <button class="calendar-nav-btn" onclick="previousMonth()">‹</button>
+                                        <div class="calendar-month-year" id="calendarMonthYear">January 2024</div>
+                                        <button class="calendar-nav-btn" onclick="nextMonth()">›</button>
+                                        <div style="width: 1px; height: 30px; background: #dee2e6; margin: 0 0.5rem;"></div>
+                                        <button class="calendar-view-btn active" onclick="setCalendarView('month', this)">Month</button>
+                                        <button class="calendar-view-btn" onclick="setCalendarView('week', this)">Week</button>
+                                    </div>
+                                </div>
+
+                                <div class="calendar-container">
+                                    <div class="calendar-weekdays">
+                                        <div class="calendar-weekday">Sun</div>
+                                        <div class="calendar-weekday">Mon</div>
+                                        <div class="calendar-weekday">Tue</div>
+                                        <div class="calendar-weekday">Wed</div>
+                                        <div class="calendar-weekday">Thu</div>
+                                        <div class="calendar-weekday">Fri</div>
+                                        <div class="calendar-weekday">Sat</div>
+                                    </div>
+                                    <div class="calendar-days" id="calendarDays">
+                                        <!-- Calendar days will be generated by JavaScript -->
+                                    </div>
+                                    <div class="calendar-legend">
+                                        <div class="calendar-legend-item">
+                                            <div class="calendar-legend-color" style="background: #dc3545;"></div>
+                                            <span>Critical</span>
+                                        </div>
+                                        <div class="calendar-legend-item">
+                                            <div class="calendar-legend-color" style="background: #ffc107;"></div>
+                                            <span>High Priority</span>
+                                        </div>
+                                        <div class="calendar-legend-item">
+                                            <div class="calendar-legend-color" style="background: #17a2b8;"></div>
+                                            <span>Medium Priority</span>
+                                        </div>
+                                        <div class="calendar-legend-item">
+                                            <div class="calendar-legend-color" style="background: #28a745;"></div>
+                                            <span>Low Priority</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Equipment View -->
+                        <div id="admin-equipment-view" class="admin-view hidden">
+                            <div class="equipment-view-container">
+                                <div class="equipment-main-content">
+                                    <div class="equipment-header-section">
+                                        <div class="equipment-title-section">
+                                            <h2>Equipment</h2>
+                                            <p>Manage and monitor all your equipment assets.</p>
+                                        </div>
+                                        <div class="equipment-header-actions">
+                                            <div class="equipment-type-toggle">
+                                                <button class="equipment-type-btn active" id="workCenterBtn" onclick="switchEquipmentType('workcenter')">
+                                                    Work Center
+                                                </button>
+                                                <button class="equipment-type-btn" id="machineToolsBtn" onclick="switchEquipmentType('machinetools')">
+                                                    Machine & Tools
+                                                </button>
+                                            </div>
+                                            <button class="add-equipment-btn" id="headerAddBtn" onclick="handleHeaderAddButton()">
+                                                <span>+</span> New
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Work Center View -->
+                                    <div id="workCenterView" class="equipment-type-view">
+                                        <div class="equipment-table-container">
+                                            <table class="equipment-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Work Center</th>
+                                                        <th>Code</th>
+                                                        <th>Tag</th>
+                                                        <th>Alternative Workcenters</th>
+                                                        <th>Cost per hour</th>
+                                                        <th>Capacity Time Efficiency</th>
+                                                        <th>OEE Target</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="workCenterTableBody">
+                                                    <tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading work centers...</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Machine & Tools View -->
+                                    <div id="machineToolsView" class="equipment-type-view hidden">
+                                        <div class="equipment-filters">
+                                            <div class="equipment-search">
+                                                <span class="search-icon">🔍</span>
+                                                <input type="text" placeholder="Search equipment..." id="equipmentSearch" onkeyup="searchEquipment()">
+                                            </div>
+                                        </div>
+                                        <div class="equipment-table-container">
+                                            <table class="equipment-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Equipment Name</th>
+                                                        <th>Employee</th>
+                                                        <th>Department</th>
+                                                        <th>Serial Number</th>
+                                                        <th>Technician</th>
+                                                        <th>Equipment Category</th>
+                                                        <th>Company</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="equipmentTableBody">
+                                                    <tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading equipment...</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Add Equipment Modal -->
+                        <div id="addEquipmentModal" class="modal hidden">
+                            <div class="modal-content equipment-modal-content">
+                                <span class="close-button" onclick="event.stopPropagation(); hideAddEquipmentModal()">&times;</span>
+                                <h3>Equipment</h3>
+                                <form id="addEquipmentForm" onsubmit="handleAddEquipment(event)">
+                                    <div class="equipment-form-columns">
+                                        <div class="equipment-form-left">
+                                            <div class="form-group">
+                                                <label for="equipmentName">Name?</label>
+                                                <input type="text" id="equipmentName" placeholder="Samsung Monitor 15&quot;">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="equipmentCategory">Equipment Category?</label>
+                                                <input type="text" id="equipmentCategory" placeholder="Monitors">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="equipmentCompany">Company?</label>
+                                                <input type="text" id="equipmentCompany" value="My Company (San Francisco)">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="equipmentUsedBy">Used By?</label>
+                                                <select id="equipmentUsedBy">
+                                                    <option value="Employee" selected>Employee</option>
+                                                    <option value="Department">Department</option>
+                                                    <option value="Team">Team</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="equipmentMaintenanceTeam">Maintenance Team?</label>
+                                                <input type="text" id="equipmentMaintenanceTeam" placeholder="Internal Maintenance">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="equipmentAssignedDate">Assigned Date?</label>
+                                                <input type="date" id="equipmentAssignedDate">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="equipmentDescription">Description</label>
+                                                <textarea id="equipmentDescription" rows="4" placeholder="Enter equipment description..."></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="equipment-form-right">
+                                            <div class="form-group">
+                                                <label for="equipmentTechnician">Technician?</label>
+                                                <input type="text" id="equipmentTechnician" placeholder="Mitchell Admin">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="equipmentEmployee">Employee?</label>
+                                                <input type="text" id="equipmentEmployee" placeholder="Abigail Peterson">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="equipmentScrapDate">Scrap Date?</label>
+                                                <input type="date" id="equipmentScrapDate">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="equipmentUsedInLocation">Used in location?</label>
+                                                <input type="text" id="equipmentUsedInLocation" placeholder="Enter location">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="equipmentWorkCenter">Work Center?</label>
+                                                <input type="text" id="equipmentWorkCenter" placeholder="Select work center">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="equipment-form-actions">
+                                        <button type="button" class="btn-secondary" onclick="hideAddEquipmentModal()">Cancel</button>
+                                        <button type="submit" class="btn">Save</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Add Work Center Modal -->
+                        <div id="addWorkCenterModal" class="modal hidden">
+                            <div class="modal-content">
+                                <span class="close-button" onclick="event.stopPropagation(); hideAddWorkCenterModal()">&times;</span>
+                                <h3>Create Work Center</h3>
+                                <form id="addWorkCenterForm" onsubmit="handleAddWorkCenter(event)">
+                                    <div class="form-group">
+                                        <label for="workCenterName">Work Center Name *</label>
+                                        <input type="text" id="workCenterName" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="workCenterCode">Code *</label>
+                                        <input type="text" id="workCenterCode" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="workCenterTag">Tag</label>
+                                        <input type="text" id="workCenterTag">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="workCenterAlternatives">Alternative Workcenters (comma-separated)</label>
+                                        <input type="text" id="workCenterAlternatives" placeholder="e.g., Assembly 2, Drill 2">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="workCenterCostPerHour">Cost per hour *</label>
+                                        <input type="number" id="workCenterCostPerHour" step="0.01" value="1.00" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="workCenterCapacity">Capacity Time Efficiency (%) *</label>
+                                        <input type="number" id="workCenterCapacity" step="0.01" value="100.00" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="workCenterOEETarget">OEE Target *</label>
+                                        <input type="number" id="workCenterOEETarget" step="0.01" value="0.00" required>
+                                    </div>
+                                    <button type="submit" class="btn">Create Work Center</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Maintenance View -->
+                        <div id="admin-maintenance-view" class="admin-view hidden">
+                            <div class="dashboard-content">
+                                <div class="maintenance-header-section">
+                                    <div class="maintenance-title-section">
+                                        <h2>Maintenance Requests</h2>
+                                        <p>Track and manage all maintenance activities.</p>
+                                    </div>
+                                    <div class="maintenance-actions">
+                                        <div class="view-toggle">
+                                            <button class="view-toggle-btn active" onclick="setMaintenanceView('kanban', this)">
+                                                <span>⊞</span> Kanban
+                                            </button>
+                                            <button class="view-toggle-btn" onclick="setMaintenanceView('list', this)">
+                                                List
+                                            </button>
+                                        </div>
+                                        <button class="filter-btn" onclick="filterMaintenance()">
+                                            <span>🔽</span> Filter
+                                        </button>
+                                        <button class="new-request-btn" onclick="createNewRequest()">
+                                            <span>+</span> New Request
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="kanban-board" id="kanbanBoard">
+                                    <!-- New Column -->
+                                    <div class="kanban-column" id="kanban-new-column">
+                                        <div class="kanban-column-header">
+                                            <div class="kanban-column-icon new">●</div>
+                                            <div class="kanban-column-title">New</div>
+                                            <div class="kanban-column-count" id="kanban-new-count">0</div>
+                                        </div>
+                                        <div id="kanban-new-cards"></div>
+                                    </div>
+
+                                    <!-- In Progress Column -->
+                                    <div class="kanban-column" id="kanban-progress-column">
+                                        <div class="kanban-column-header">
+                                            <div class="kanban-column-icon progress">●</div>
+                                            <div class="kanban-column-title">In Progress</div>
+                                            <div class="kanban-column-count" id="kanban-progress-count">0</div>
+                                        </div>
+                                        <div id="kanban-progress-cards"></div>
+                                    </div>
+
+                                    <!-- Repaired Column -->
+                                    <div class="kanban-column" id="kanban-repaired-column">
+                                        <div class="kanban-column-header">
+                                            <div class="kanban-column-icon repaired">●</div>
+                                            <div class="kanban-column-title">Repaired</div>
+                                            <div class="kanban-column-count" id="kanban-repaired-count">0</div>
+                                        </div>
+                                        <div id="kanban-repaired-cards"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'technician':
+                    roleContent.innerHTML = `
+                        <div class="dashboard-nav">
+                            <button class="nav-btn active" onclick="switchNav('dashboard', this, 'technician')">Dashboard</button>
+                            <button class="nav-btn" onclick="switchNav('my-tasks', this, 'technician')">My Tasks</button>
+                            <button class="nav-btn" onclick="switchNav('equipment', this, 'technician')">Equipment</button>
+                            <button class="nav-btn" onclick="switchNav('calendar', this, 'technician')">Calendar</button>
+                            <button class="nav-btn" onclick="switchNav('reports', this, 'technician')">Reports</button>
+                        </div>
+                        
+                        <!-- Technician Dashboard View -->
+                        <div id="technician-dashboard-view" class="role-view">
+                        <div class="dashboard-content">
+                            <div class="stats-grid">
+                                <div class="stat-card warning">
+                                    <div class="stat-title">Assigned Tasks</div>
+                                    <div class="stat-value">8</div>
+                                    <div class="stat-subtitle">Active assignments</div>
+                                </div>
+                                <div class="stat-card info">
+                                    <div class="stat-title">Completed Today</div>
+                                    <div class="stat-value">3</div>
+                                    <div class="stat-subtitle">Tasks finished</div>
+                                </div>
+                                <div class="stat-card warning">
+                                    <div class="stat-title">Pending</div>
+                                    <div class="stat-value">5</div>
+                                    <div class="stat-subtitle">Awaiting action</div>
+                                </div>
+                                <div class="stat-card success">
+                                    <div class="stat-title">This Week</div>
+                                    <div class="stat-value">12</div>
+                                    <div class="stat-subtitle">Total completed</div>
+                                </div>
+                            </div>
+
+                            <div class="quick-actions">
+                                <div class="action-card" onclick="createMaintenanceReport()">
+                                    <div class="action-icon">📝</div>
+                                    <div class="action-label">Create Report</div>
+                                </div>
+                                <div class="action-card" onclick="viewEquipment()">
+                                    <div class="action-icon">🔧</div>
+                                    <div class="action-label">View Equipment</div>
+                                </div>
+                                <div class="action-card" onclick="updateStatus()">
+                                    <div class="action-icon">✅</div>
+                                    <div class="action-label">Update Status</div>
+                                </div>
+                                <div class="action-card" onclick="viewDocumentation()">
+                                    <div class="action-icon">📚</div>
+                                    <div class="action-label">Documentation</div>
+                                </div>
+                            </div>
+
+                            <div class="data-table-container">
+                                <div class="table-header">
+                                    <div class="table-title">My Assigned Tasks</div>
+                                    <div class="table-actions">
+                                        <input type="text" class="search-box" placeholder="Search tasks...">
+                                    </div>
+                                </div>
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Task ID</th>
+                                            <th>Equipment</th>
+                                            <th>Priority</th>
+                                            <th>Status</th>
+                                            <th>Due Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>#T-001</td>
+                                            <td>Generator Unit A</td>
+                                            <td><span class="badge badge-danger">Critical</span></td>
+                                            <td><span class="badge badge-warning">In Progress</span></td>
+                                            <td>2024-01-18</td>
+                                            <td>
+                                                <button class="action-btn action-btn-view">View</button>
+                                                <button class="action-btn action-btn-edit">Update</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>#T-002</td>
+                                            <td>HVAC Unit D</td>
+                                            <td><span class="badge badge-danger">Critical</span></td>
+                                            <td><span class="badge badge-info">New</span></td>
+                                            <td>2024-01-19</td>
+                                            <td>
+                                                <button class="action-btn action-btn-view">View</button>
+                                                <button class="action-btn action-btn-edit">Start</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>#T-003</td>
+                                            <td>Pump System C</td>
+                                            <td><span class="badge badge-info">Medium</span></td>
+                                            <td><span class="badge badge-success">Completed</span></td>
+                                            <td>2024-01-15</td>
+                                            <td>
+                                                <button class="action-btn action-btn-view">View</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        </div>
+
+                        <!-- Technician Calendar View -->
+                        <div id="technician-calendar-view" class="role-view hidden">
+                            <div class="dashboard-content">
+                                <div class="calendar-header-section">
+                                    <div class="calendar-title-section">
+                                        <h2>Maintenance Calendar</h2>
+                                        <p>View your assigned maintenance tasks and schedule.</p>
+                                    </div>
+                                    <div class="calendar-controls">
+                                        <button class="calendar-nav-btn" onclick="previousMonth()">‹</button>
+                                        <div class="calendar-month-year" id="technicianCalendarMonthYear">January 2024</div>
+                                        <button class="calendar-nav-btn" onclick="nextMonth()">›</button>
+                                        <div style="width: 1px; height: 30px; background: #dee2e6; margin: 0 0.5rem;"></div>
+                                        <button class="calendar-view-btn active" onclick="setCalendarView('month', this)">Month</button>
+                                        <button class="calendar-view-btn" onclick="setCalendarView('week', this)">Week</button>
+                                    </div>
+                                </div>
+
+                                <div class="calendar-container">
+                                    <div class="calendar-weekdays">
+                                        <div class="calendar-weekday">Sun</div>
+                                        <div class="calendar-weekday">Mon</div>
+                                        <div class="calendar-weekday">Tue</div>
+                                        <div class="calendar-weekday">Wed</div>
+                                        <div class="calendar-weekday">Thu</div>
+                                        <div class="calendar-weekday">Fri</div>
+                                        <div class="calendar-weekday">Sat</div>
+                                    </div>
+                                    <div class="calendar-days" id="technicianCalendarDays">
+                                        <!-- Calendar days will be generated by JavaScript -->
+                                    </div>
+                                    <div class="calendar-legend">
+                                        <div class="calendar-legend-item">
+                                            <div class="calendar-legend-color" style="background: #dc3545;"></div>
+                                            <span>Critical</span>
+                                        </div>
+                                        <div class="calendar-legend-item">
+                                            <div class="calendar-legend-color" style="background: #ffc107;"></div>
+                                            <span>High Priority</span>
+                                        </div>
+                                        <div class="calendar-legend-item">
+                                            <div class="calendar-legend-color" style="background: #17a2b8;"></div>
+                                            <span>Medium Priority</span>
+                                        </div>
+                                        <div class="calendar-legend-item">
+                                            <div class="calendar-legend-color" style="background: #28a745;"></div>
+                                            <span>Low Priority</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'user':
+                    roleContent.innerHTML = `
+                        <div class="dashboard-nav">
+                            <button class="nav-btn active" onclick="switchNav('dashboard', this, 'user')">Dashboard</button>
+                            <button class="nav-btn" onclick="switchNav('requests', this, 'user')">My Requests</button>
+                            <button class="nav-btn" onclick="switchNav('calendar', this, 'user')">Calendar</button>
+                            <button class="nav-btn" onclick="switchNav('equipment', this, 'user')">Equipment Status</button>
+                        </div>
+                        
+                        <!-- User Dashboard View -->
+                        <div id="user-dashboard-view" class="role-view">
+                        <div class="dashboard-content">
+                            <div class="stats-grid">
+                                <div class="stat-card info">
+                                    <div class="stat-title">My Requests</div>
+                                    <div class="stat-value">5</div>
+                                    <div class="stat-subtitle">Total submitted</div>
+                                </div>
+                                <div class="stat-card warning">
+                                    <div class="stat-title">Pending</div>
+                                    <div class="stat-value">2</div>
+                                    <div class="stat-subtitle">Awaiting review</div>
+                                </div>
+                                <div class="stat-card success">
+                                    <div class="stat-title">Resolved</div>
+                                    <div class="stat-value">3</div>
+                                    <div class="stat-subtitle">Completed requests</div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+
+                        <!-- User My Requests View -->
+                        <div id="user-requests-view" class="role-view hidden">
+                            <div class="dashboard-content">
+                                <div class="reports-header-section">
+                                    <div class="reports-title-section">
+                                        <h2>My Maintenance Requests</h2>
+                                        <p>Track and manage your submitted maintenance requests.</p>
+                                    </div>
+                                    <button class="create-team-btn" onclick="showNewRequestForm()">
+                                        <span>+</span> New Request
+                                    </button>
+                                </div>
+
+                                <div class="data-table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Request ID</th>
+                                                <th>Equipment</th>
+                                                <th>Priority</th>
+                                                <th>Status</th>
+                                                <th>Submitted</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="user-requests-table-body">
+                                            <tr><td colspan="6" style="text-align: center; padding: 2rem;">Loading requests...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- User Calendar View -->
+                        <div id="user-calendar-view" class="role-view hidden">
+                            <div class="dashboard-content">
+                                <div class="calendar-header-section">
+                                    <div class="calendar-title-section">
+                                        <h2>Maintenance Calendar</h2>
+                                        <p>View scheduled maintenance for your equipment.</p>
+                                    </div>
+                                    <div class="calendar-controls">
+                                        <button class="calendar-nav-btn" onclick="previousMonth()">‹</button>
+                                        <div class="calendar-month-year" id="userCalendarMonthYear">January 2024</div>
+                                        <button class="calendar-nav-btn" onclick="nextMonth()">›</button>
+                                        <div style="width: 1px; height: 30px; background: #dee2e6; margin: 0 0.5rem;"></div>
+                                        <button class="calendar-view-btn active" onclick="setCalendarView('month', this)">Month</button>
+                                        <button class="calendar-view-btn" onclick="setCalendarView('week', this)">Week</button>
+                                    </div>
+                                </div>
+
+                                <div class="calendar-container">
+                                    <div class="calendar-weekdays">
+                                        <div class="calendar-weekday">Sun</div>
+                                        <div class="calendar-weekday">Mon</div>
+                                        <div class="calendar-weekday">Tue</div>
+                                        <div class="calendar-weekday">Wed</div>
+                                        <div class="calendar-weekday">Thu</div>
+                                        <div class="calendar-weekday">Fri</div>
+                                        <div class="calendar-weekday">Sat</div>
+                                    </div>
+                                    <div class="calendar-days" id="userCalendarDays">
+                                        <!-- Calendar days will be generated by JavaScript -->
+                                    </div>
+                                    <div class="calendar-legend">
+                                        <div class="calendar-legend-item">
+                                            <div class="calendar-legend-color" style="background: #dc3545;"></div>
+                                            <span>Critical</span>
+                                        </div>
+                                        <div class="calendar-legend-item">
+                                            <div class="calendar-legend-color" style="background: #ffc107;"></div>
+                                            <span>High Priority</span>
+                                        </div>
+                                        <div class="calendar-legend-item">
+                                            <div class="calendar-legend-color" style="background: #17a2b8;"></div>
+                                            <span>Medium Priority</span>
+                                        </div>
+                                        <div class="calendar-legend-item">
+                                            <div class="calendar-legend-color" style="background: #28a745;"></div>
+                                            <span>Low Priority</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+            }
+        }
+
+        function switchNav(section, buttonElement, role = 'admin') {
+            // Update active nav button
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            if (buttonElement) {
+                buttonElement.classList.add('active');
+            }
+            
+            if (role === 'admin') {
+                // Hide all admin views
+                document.querySelectorAll('.admin-view').forEach(view => view.classList.add('hidden'));
+                
+                // Show selected view
+                const viewId = `admin-${section}-view`;
+                const view = document.getElementById(viewId);
+                if (view) {
+                    view.classList.remove('hidden');
+                    
+                    // Load data based on view
+                    if (section === 'equipment') {
+                        // Default to Work Center view
+                        switchEquipmentType('workcenter');
+                    } else if (section === 'maintenance') {
+                        loadMaintenanceView();
+                    } else if (section === 'teams') {
+                        loadTeamsView();
+                    } else if (section === 'reporting') {
+                        loadReportsView();
+                    } else if (section === 'calendar') {
+                        setTimeout(() => initializeCalendar('admin'), 100);
+                    }
+                } else {
+                    // If view doesn't exist, show dashboard as default
+                    const dashboardView = document.getElementById('admin-dashboard-view');
+                    if (dashboardView) {
+                        dashboardView.classList.remove('hidden');
+                    }
+                    console.log(`View ${viewId} not found`);
+                }
+            } else if (role === 'technician') {
+                // Hide all technician views
+                document.querySelectorAll('.role-view').forEach(view => view.classList.add('hidden'));
+                
+                // Show selected view
+                const viewId = `technician-${section}-view`;
+                const view = document.getElementById(viewId);
+                if (view) {
+                    view.classList.remove('hidden');
+                    // Initialize calendar if calendar view is shown
+                    if (section === 'calendar') {
+                        setTimeout(() => initializeCalendar('technician'), 100);
+                    }
+                } else {
+                    // If view doesn't exist, show dashboard as default
+                    const dashboardView = document.getElementById('technician-dashboard-view');
+                    if (dashboardView) {
+                        dashboardView.classList.remove('hidden');
+                    }
+                    console.log(`View ${viewId} not found`);
+                }
+            } else if (role === 'user') {
+                // Hide all user views
+                document.querySelectorAll('.role-view').forEach(view => view.classList.add('hidden'));
+                
+                // Show selected view
+                const viewId = `user-${section}-view`;
+                const view = document.getElementById(viewId);
+                if (view) {
+                    view.classList.remove('hidden');
+                    
+                    // Load data based on view
+                    if (section === 'requests') {
+                        loadUserRequestsView();
+                    } else if (section === 'calendar') {
+                        setTimeout(() => initializeCalendar('user'), 100);
+                    }
+                } else {
+                    // If view doesn't exist, show dashboard as default
+                    const dashboardView = document.getElementById('user-dashboard-view');
+                    if (dashboardView) {
+                        dashboardView.classList.remove('hidden');
+                    }
+                    console.log(`View ${viewId} not found`);
+                }
+            }
+        }
+
+        // Load User Requests View
+        async function loadUserRequestsView() {
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                const requests = await loadMaintenanceRequests();
+                
+                // Filter requests submitted by current user
+                const userRequests = requests.filter(r => 
+                    r.submittedBy && (r.submittedBy._id === user.id || r.submittedBy.id === user.id)
+                );
+                
+                const tbody = document.getElementById('user-requests-table-body');
+                if (!tbody) return;
+                
+                if (userRequests.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">No requests found</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = userRequests.map(request => {
+                    const priorityClass = getPriorityBadgeClass(request.priority);
+                    const statusClass = getStatusBadgeClass(request.status);
+                    const priorityText = request.priority.charAt(0).toUpperCase() + request.priority.slice(1);
+                    const statusText = formatStatus(request.status);
+                    const date = new Date(request.submittedDate).toLocaleDateString();
+                    
+                    return `
+                        <tr>
+                            <td>${request.requestId}</td>
+                            <td>${request.equipment}</td>
+                            <td><span class="badge ${priorityClass}">${priorityText}</span></td>
+                            <td><span class="badge ${statusClass}">${statusText}</span></td>
+                            <td>${date}</td>
+                            <td>
+                                <button class="action-btn action-btn-view" onclick="viewUserRequest('${request._id}')">View</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading user requests:', error);
+                const tbody = document.getElementById('user-requests-table-body');
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: red;">Error loading requests</td></tr>';
+                }
+            }
+        }
+
+        async function createNewTeam() {
+            try {
+                // Fetch users (technicians) for team creation
+                const usersData = await apiCall('/api/auth/users?role=technician');
+                const technicians = usersData.users || [];
+                
+                showCreateTeamModal(technicians);
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showCreateTeamModal([]);
+            }
+        }
+
+        function showCreateTeamModal(technicians) {
+            const modal = document.getElementById('createTeamModal');
+            if (modal) {
+                modal.classList.add('show');
+                populateTeamMembersList(technicians);
+            } else {
+                createTeamModal(technicians);
+            }
+        }
+
+        function createTeamModal(technicians) {
+            const modal = document.createElement('div');
+            modal.id = 'createTeamModal';
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 700px;">
+                    <div class="modal-header">
+                        <h3>Create New Team</h3>
+                        <button class="close-modal" onclick="event.stopPropagation(); closeCreateTeamModal()">×</button>
+                    </div>
+                    <form onsubmit="submitNewTeam(event)">
+                        <div class="form-group">
+                            <label for="teamName">Team Name *</label>
+                            <input type="text" id="teamName" required placeholder="e.g., Mechanics, Electricians, IT Support">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Team Members *</label>
+                            <div style="border: 1px solid #dee2e6; border-radius: 8px; padding: 1rem; max-height: 300px; overflow-y: auto; background: #f8f9fa;">
+                                <div id="teamMembersList">
+                                    ${technicians.length === 0 ? '<p style="color: #6c757d; text-align: center; padding: 1rem;">No technicians available</p>' : ''}
+                                    ${technicians.map(tech => `
+                                        <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; background: white; border-radius: 6px; margin-bottom: 0.5rem;">
+                                            <input type="checkbox" id="member-${tech._id}" value="${tech._id}" name="teamMembers" 
+                                                   data-name="${tech.username}" data-email="${tech.email}">
+                                            <label for="member-${tech._id}" style="flex: 1; cursor: pointer; margin: 0;">
+                                                <div style="font-weight: 600;">${tech.username}</div>
+                                                <div style="font-size: 0.875rem; color: #6c757d;">${tech.email}</div>
+                                            </label>
+                                            <div class="form-group" style="margin: 0; width: 200px;">
+                                                <input type="text" placeholder="Role (e.g., Lead Technician)" 
+                                                       id="role-${tech._id}" style="font-size: 0.875rem;">
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <small style="color: #6c757d; margin-top: 0.5rem; display: block;">Select at least one team member</small>
+                        </div>
+                        
+                        <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                            <button type="button" class="btn-outline" onclick="closeCreateTeamModal()">Cancel</button>
+                            <button type="submit" class="btn">Create Team</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.classList.add('show');
+        }
+
+        function populateTeamMembersList(technicians) {
+            const membersList = document.getElementById('teamMembersList');
+            if (membersList) {
+                if (technicians.length === 0) {
+                    membersList.innerHTML = '<p style="color: #6c757d; text-align: center; padding: 1rem;">No technicians available</p>';
+                } else {
+                    membersList.innerHTML = technicians.map(tech => `
+                        <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; background: white; border-radius: 6px; margin-bottom: 0.5rem;">
+                            <input type="checkbox" id="member-${tech._id}" value="${tech._id}" name="teamMembers" 
+                                   data-name="${tech.username}" data-email="${tech.email}">
+                            <label for="member-${tech._id}" style="flex: 1; cursor: pointer; margin: 0;">
+                                <div style="font-weight: 600;">${tech.username}</div>
+                                <div style="font-size: 0.875rem; color: #6c757d;">${tech.email}</div>
+                            </label>
+                            <div class="form-group" style="margin: 0; width: 200px;">
+                                <input type="text" placeholder="Role (e.g., Lead Technician)" 
+                                       id="role-${tech._id}" style="font-size: 0.875rem;">
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
+        }
+
+        function closeCreateTeamModal() {
+            const modal = document.getElementById('createTeamModal');
+            if (modal) {
+                modal.classList.remove('show');
+                modal.classList.add('hidden');
+                // Reset form if it exists
+                const form = document.querySelector('#createTeamModal form');
+                if (form) {
+                    form.reset();
+                }
+            }
+        }
+
+        async function submitNewTeam(event) {
+            event.preventDefault();
+            
+            const teamName = document.getElementById('teamName').value;
+            const selectedMembers = Array.from(document.querySelectorAll('input[name="teamMembers"]:checked'));
+            
+            if (selectedMembers.length === 0) {
+                alert('Please select at least one team member');
+                return;
+            }
+            
+            const members = selectedMembers.map(member => {
+                const userId = member.value;
+                const role = document.getElementById(`role-${userId}`).value || 'Member';
+                const name = member.dataset.name;
+                const email = member.dataset.email;
+                const avatar = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                
+                return {
+                    userId: userId,
+                    name: name,
+                    role: role,
+                    avatar: avatar
+                };
+            });
+            
+            try {
+                const data = await apiCall('/api/teams', 'POST', {
+                    name: teamName,
+                    members: members
+                });
+                
+                alert('Team created successfully!');
+                closeCreateTeamModal();
+                
+                // Refresh teams view
+                await loadTeamsView();
+            } catch (error) {
+                alert(`Error creating team: ${error.message}`);
+            }
+        }
+
+        function viewTeamDetails(teamId) {
+            alert(`View team details for: ${teamId}`);
+            // This can navigate to a detailed team view
+        }
+
+        function refreshReports() {
+            alert('Refreshing reports...');
+            // Add refresh functionality here
+        }
+
+        function exportReports() {
+            alert('Exporting reports...');
+            // Add export functionality here
+        }
+
+        // Calendar functionality
+        let currentDate = new Date();
+        let currentMonth = currentDate.getMonth();
+        let currentYear = currentDate.getFullYear();
+
+        async function renderCalendar(calendarDaysId = 'calendarDays', monthYearId = 'calendarMonthYear', maintenanceEvents = null) {
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                              'July', 'August', 'September', 'October', 'November', 'December'];
+            
+            const monthYearElement = document.getElementById(monthYearId);
+            if (monthYearElement) {
+                monthYearElement.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+            }
+
+            const calendarDays = document.getElementById(calendarDaysId);
+            if (!calendarDays) return;
+            
+            calendarDays.innerHTML = '';
+
+            // Load events from API if not provided
+            if (maintenanceEvents === null) {
+                try {
+                    const requests = await loadMaintenanceRequests();
+                    maintenanceEvents = {};
+                    requests.forEach(request => {
+                        const requestDate = new Date(request.submittedDate);
+                        if (requestDate.getMonth() === currentMonth && requestDate.getFullYear() === currentYear) {
+                            const day = requestDate.getDate();
+                            if (!maintenanceEvents[day]) {
+                                maintenanceEvents[day] = [];
+                            }
+                            maintenanceEvents[day].push({
+                                type: request.priority === 'critical' ? 'critical' : 
+                                      request.priority === 'high' ? 'high' : 
+                                      request.priority === 'medium' ? 'medium' : 'low',
+                                title: request.title
+                            });
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error loading calendar events:', error);
+                    maintenanceEvents = {};
+                }
+            }
+
+            // Add empty cells for days before the first day of the month
+            const prevMonthLastDay = new Date(currentYear, currentMonth, 0).getDate();
+            for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+                const day = prevMonthLastDay - i;
+                const dayElement = createCalendarDay(day, true, []);
+                calendarDays.appendChild(dayElement);
+            }
+
+            // Add cells for all days in the month
+            const today = new Date();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const isToday = today.getDate() === day && 
+                               today.getMonth() === currentMonth && 
+                               today.getFullYear() === currentYear;
+                const events = maintenanceEvents[day] || [];
+                const dayElement = createCalendarDay(day, false, events, isToday);
+                calendarDays.appendChild(dayElement);
+            }
+
+            // Add empty cells for remaining days
+            const totalCells = startingDayOfWeek + daysInMonth;
+            const remainingCells = 42 - totalCells; // 6 rows * 7 days
+            for (let day = 1; day <= remainingCells && day <= 7; day++) {
+                const dayElement = createCalendarDay(day, true, []);
+                calendarDays.appendChild(dayElement);
+            }
+        }
+
+        function createCalendarDay(day, isOtherMonth, events, isToday = false) {
+            const dayElement = document.createElement('div');
+            dayElement.className = 'calendar-day';
+            
+            if (isOtherMonth) {
+                dayElement.classList.add('other-month');
+            }
+            if (isToday) {
+                dayElement.classList.add('today');
+            }
+
+            const dayNumber = document.createElement('div');
+            dayNumber.className = 'calendar-day-number';
+            dayNumber.textContent = day;
+            dayElement.appendChild(dayNumber);
+
+            if (events.length > 0) {
+                const eventsContainer = document.createElement('div');
+                eventsContainer.className = 'calendar-day-events';
+                
+                events.forEach(event => {
+                    const eventElement = document.createElement('div');
+                    eventElement.className = `calendar-event ${event.type}`;
+                    eventElement.title = event.title;
+                    eventsContainer.appendChild(eventElement);
+                });
+                
+                dayElement.appendChild(eventsContainer);
+            }
+
+            dayElement.onclick = () => {
+                if (!isOtherMonth) {
+                    document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
+                    dayElement.classList.add('selected');
+                    showDayEvents(day, events);
+                }
+            };
+
+            return dayElement;
+        }
+
+        function previousMonth() {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            // Re-render all visible calendars
+            if (document.getElementById('calendarDays')) {
+                initializeCalendar('admin');
+            }
+            if (document.getElementById('technicianCalendarDays')) {
+                initializeCalendar('technician');
+            }
+            if (document.getElementById('userCalendarDays')) {
+                initializeCalendar('user');
+            }
+        }
+
+        function nextMonth() {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            // Re-render all visible calendars
+            if (document.getElementById('calendarDays')) {
+                initializeCalendar('admin');
+            }
+            if (document.getElementById('technicianCalendarDays')) {
+                initializeCalendar('technician');
+            }
+            if (document.getElementById('userCalendarDays')) {
+                initializeCalendar('user');
+            }
+        }
+
+        function setCalendarView(view, buttonElement) {
+            document.querySelectorAll('.calendar-view-btn').forEach(btn => btn.classList.remove('active'));
+            buttonElement.classList.add('active');
+            // Week view functionality can be added here
+            console.log('Switched to', view, 'view');
+        }
+
+        function showDayEvents(day, events) {
+            if (events.length > 0) {
+                const eventList = events.map(e => `• ${e.title}`).join('\\n');
+                alert(`Maintenance Events on ${day}:\\n\\n${eventList}`);
+            } else {
+                alert(`No maintenance events scheduled for ${day}`);
+            }
+        }
+
+        // Handle Header Add Button
+        function handleHeaderAddButton() {
+            const workCenterBtn = document.getElementById('workCenterBtn');
+            if (workCenterBtn && workCenterBtn.classList.contains('active')) {
+                showAddWorkCenterModal();
+            } else {
+                showAddEquipmentModal();
+            }
+        }
+
+        // Switch Equipment Type
+        function switchEquipmentType(type) {
+            const workCenterBtn = document.getElementById('workCenterBtn');
+            const machineToolsBtn = document.getElementById('machineToolsBtn');
+            const workCenterView = document.getElementById('workCenterView');
+            const machineToolsView = document.getElementById('machineToolsView');
+            
+            if (type === 'workcenter') {
+                workCenterBtn.classList.add('active');
+                machineToolsBtn.classList.remove('active');
+                workCenterView.classList.remove('hidden');
+                machineToolsView.classList.add('hidden');
+                loadWorkCenterView();
+            } else {
+                workCenterBtn.classList.remove('active');
+                machineToolsBtn.classList.add('active');
+                workCenterView.classList.add('hidden');
+                machineToolsView.classList.remove('hidden');
+                loadEquipmentView();
+            }
+        }
+
+        // Load Work Center View
+        async function loadWorkCenterView() {
+            try {
+                const data = await apiCall('/api/workcenters');
+                const workCenters = data.workCenters || [];
+                const tbody = document.getElementById('workCenterTableBody');
+                if (!tbody) return;
+                
+                if (workCenters.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No work centers found. Click "New" to create one.</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = workCenters.map(wc => `
+                    <tr>
+                        <td>${wc.name}</td>
+                        <td>${wc.code}</td>
+                        <td>${wc.tag || '-'}</td>
+                        <td>${wc.alternativeWorkcenters && wc.alternativeWorkcenters.length > 0 ? wc.alternativeWorkcenters.join(', ') : '-'}</td>
+                        <td>${wc.costPerHour ? wc.costPerHour.toFixed(2) : '0.00'}</td>
+                        <td>${wc.capacityTimeEfficiency ? wc.capacityTimeEfficiency.toFixed(2) : '100.00'}</td>
+                        <td>${wc.oeeTarget ? wc.oeeTarget.toFixed(2) : '0.00'}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading work centers:', error);
+                const tbody = document.getElementById('workCenterTableBody');
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: red;">Error loading work centers</td></tr>';
+                }
+            }
+        }
+
+        // Load Equipment View (Machine & Tools)
+        async function loadEquipmentView() {
+            try {
+                const equipment = await loadEquipmentData();
+                const tbody = document.getElementById('equipmentTableBody');
+                if (!tbody) return;
+                
+                if (equipment.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No equipment found</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = equipment.map(eq => `
+                    <tr>
+                        <td>${eq.name}</td>
+                        <td>${eq.assignedTo || '-'}</td>
+                        <td>${eq.department}</td>
+                        <td>${eq.serialNumber}</td>
+                        <td>${eq.technician || '-'}</td>
+                        <td>${eq.category}</td>
+                        <td>${eq.company || 'My Company (San Francisco)'}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading equipment view:', error);
+                const tbody = document.getElementById('equipmentTableBody');
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: red;">Error loading equipment</td></tr>';
+                }
+            }
+        }
+
+        // Show Equipment Details Sidebar
+        async function showEquipmentDetails(equipmentId) {
+            try {
+                const data = await apiCall(`/api/equipment/${equipmentId}`);
+                const equipment = data.equipment;
+                
+                // Update sidebar content
+                document.getElementById('sidebarEquipmentName').textContent = equipment.name;
+                document.getElementById('sidebarSerialNumber').textContent = equipment.serialNumber;
+                document.getElementById('sidebarDepartment').textContent = equipment.department;
+                document.getElementById('sidebarLocation').textContent = equipment.location;
+                document.getElementById('sidebarAssignedTo').textContent = equipment.assignedTo;
+                document.getElementById('sidebarTeam').textContent = equipment.team;
+                document.getElementById('sidebarMaintenanceCount').textContent = equipment.maintenanceCount || 0;
+                
+                // Format dates
+                const purchaseDate = equipment.purchaseDate ? new Date(equipment.purchaseDate).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : '-';
+                const warrantyExpires = equipment.warrantyExpires ? new Date(equipment.warrantyExpires).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : '-';
+                
+                document.getElementById('sidebarPurchaseDate').textContent = purchaseDate;
+                const warrantyElement = document.getElementById('sidebarWarrantyExpires');
+                warrantyElement.textContent = warrantyExpires;
+                
+                // Check if warranty is expired or expiring soon
+                if (equipment.warrantyExpires) {
+                    const warrantyDate = new Date(equipment.warrantyExpires);
+                    const today = new Date();
+                    if (warrantyDate < today) {
+                        warrantyElement.style.color = '#e74c3c';
+                    } else if (warrantyDate <= new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)) {
+                        warrantyElement.style.color = '#f39c12';
+                    } else {
+                        warrantyElement.style.color = '#27ae60';
+                    }
+                }
+                
+                // Store equipment ID for maintenance button
+                document.getElementById('sidebarViewMaintenanceBtn').setAttribute('data-equipment-id', equipmentId);
+                
+                // Show sidebar
+                document.getElementById('equipmentSidebar').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading equipment details:', error);
+                alert('Error loading equipment details');
+            }
+        }
+
+        // Close Equipment Sidebar
+        function closeEquipmentSidebar() {
+            document.getElementById('equipmentSidebar').classList.add('hidden');
+        }
+
+        // View Equipment Maintenance from Sidebar
+        function viewEquipmentMaintenanceFromSidebar() {
+            const equipmentId = document.getElementById('sidebarViewMaintenanceBtn').getAttribute('data-equipment-id');
+            if (equipmentId) {
+                viewEquipmentMaintenance(equipmentId);
+            }
+        }
+
+        // Load Maintenance View (Kanban)
+        async function loadMaintenanceView() {
+            try {
+                const requests = await loadMaintenanceRequests();
+                
+                // Group requests by status
+                const newRequests = requests.filter(r => r.status === 'new');
+                const inProgressRequests = requests.filter(r => r.status === 'in-progress');
+                const repairedRequests = requests.filter(r => r.status === 'repaired');
+                
+                // Update Kanban columns
+                updateKanbanColumn('new', newRequests);
+                updateKanbanColumn('in-progress', inProgressRequests);
+                updateKanbanColumn('repaired', repairedRequests);
+            } catch (error) {
+                console.error('Error loading maintenance view:', error);
+            }
+        }
+
+        function updateKanbanColumn(status, requests) {
+            const statusMap = {
+                'new': { countId: 'kanban-new-count', cardsId: 'kanban-new-cards' },
+                'in-progress': { countId: 'kanban-progress-count', cardsId: 'kanban-progress-cards' },
+                'repaired': { countId: 'kanban-repaired-count', cardsId: 'kanban-repaired-cards' }
+            };
+            
+            const { countId, cardsId } = statusMap[status];
+            const countElement = document.getElementById(countId);
+            const cardsElement = document.getElementById(cardsId);
+            
+            if (countElement) {
+                countElement.textContent = requests.length;
+            }
+            
+            if (cardsElement) {
+                if (requests.length === 0) {
+                    cardsElement.innerHTML = '<div style="text-align: center; padding: 1rem; color: #6c757d;">No requests</div>';
+                } else {
+                    cardsElement.innerHTML = requests.map(request => {
+                        const date = new Date(request.submittedDate).toLocaleDateString();
+                        const assignee = request.assignedTo ? (request.assignedTo.username || request.assignedTo.name || 'Unknown') : 'Unassigned';
+                        const avatar = assignee.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                        const isUrgent = request.priority === 'critical' || (request.timeElapsed && parseInt(request.timeElapsed) > 6);
+                        
+                        return `
+                            <div class="kanban-card" onclick="viewRequest('${request._id}')">
+                                ${isUrgent ? '<div class="kanban-card-urgent">!</div>' : ''}
+                                <div class="kanban-card-title">${request.title}</div>
+                                <div class="kanban-card-equipment">${request.equipment}</div>
+                                <div class="kanban-card-meta">
+                                    <div class="kanban-card-meta-item">
+                                        <span>📅</span>
+                                        <span>${date}</span>
+                                    </div>
+                                    ${request.timeElapsed ? `
+                                    <div class="kanban-card-meta-item">
+                                        <span>⏱</span>
+                                        <span>${request.timeElapsed}</span>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                <div class="kanban-card-assigned">
+                                    <div class="kanban-card-avatar">${avatar}</div>
+                                    <div class="kanban-card-assignee-name">${assignee}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+        }
+
+        // Load Teams View
+        async function loadTeamsView() {
+            try {
+                const teams = await loadTeamsData();
+                const teamsGrid = document.getElementById('teamsCardsGrid');
+                if (!teamsGrid) return;
+                
+                if (teams.length === 0) {
+                    teamsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem;">No teams found. Click "Create Team" to add your first team.</div>';
+                    return;
+                }
+                
+                teamsGrid.innerHTML = teams.map(team => {
+                    // Get member details
+                    const memberDetails = team.members.map(member => {
+                        const name = member.name || (member.userId && member.userId.username) || 'Unknown';
+                        const role = member.role || 'Member';
+                        const avatar = member.avatar || (name ? name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : 'U');
+                        return { name, role, avatar };
+                    });
+                    
+                    return `
+                        <div class="team-card" onclick="viewTeamDetails('${team._id}')">
+                            <div class="team-card-header">
+                                <div class="team-card-title-section">
+                                    <div class="team-icon">👥</div>
+                                    <div class="team-title-info">
+                                        <h3>${team.name}</h3>
+                                        <p>${team.members.length} team member${team.members.length !== 1 ? 's' : ''}</p>
+                                    </div>
+                                </div>
+                                <div class="team-card-chevron">›</div>
+                            </div>
+                            <div class="team-active-requests">
+                                <div class="active-requests-badge">
+                                    <span class="icon">🔧</span>
+                                    <span>Active Requests</span>
+                                </div>
+                                <div class="request-count-badge">${team.activeRequests || 0}</div>
+                            </div>
+                            <div class="team-members-section">
+                                <div class="team-members-label">Team Members</div>
+                                ${memberDetails.map(member => `
+                                    <div class="team-member-item">
+                                        <div class="member-avatar">${member.avatar}</div>
+                                        <div class="member-info">
+                                            <h4>${member.name}</h4>
+                                            <p>${member.role}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading teams view:', error);
+                const teamsGrid = document.getElementById('teamsCardsGrid');
+                if (teamsGrid) {
+                    teamsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: red;">Error loading teams</div>';
+                }
+            }
+        }
+
+        // Load Reports View
+        async function loadReportsView() {
+            try {
+                const reportsData = await loadReportsData();
+                // Update charts with real data
+                updateReportsCharts(reportsData);
+            } catch (error) {
+                console.error('Error loading reports view:', error);
+            }
+        }
+
+        function updateReportsCharts(data) {
+            // Update Requests by Team chart
+            if (data.requestsByTeam) {
+                const maxCount = Math.max(...data.requestsByTeam.map(t => t.count), 1);
+                const barsContainer = document.querySelector('#admin-reporting-view .bar-chart-bars');
+                if (barsContainer) {
+                    barsContainer.innerHTML = data.requestsByTeam.map(team => {
+                        const width = (team.count / maxCount) * 100;
+                        return `
+                            <div class="bar-chart-item">
+                                <div class="bar-chart-label">${team.team}</div>
+                                <div class="bar-chart-bar-container">
+                                    <div class="bar-chart-bar" style="width: ${width}%;">${team.count}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+        }
+
+        // Equipment functions
+        function showAddEquipmentModal() {
+            const modal = document.getElementById('addEquipmentModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('show');
+        }
+
+        function hideAddEquipmentModal() {
+            const modal = document.getElementById('addEquipmentModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('show');
+            document.getElementById('addEquipmentForm').reset();
+        }
+
+        // Close modal when clicking outside - unified handler
+        document.addEventListener('click', function(event) {
+            // Equipment Modal
+            const addEquipmentModal = document.getElementById('addEquipmentModal');
+            if (addEquipmentModal && !addEquipmentModal.classList.contains('hidden') && event.target === addEquipmentModal) {
+                hideAddEquipmentModal();
+            }
+            
+            // Work Center Modal
+            const addWorkCenterModal = document.getElementById('addWorkCenterModal');
+            if (addWorkCenterModal && !addWorkCenterModal.classList.contains('hidden') && event.target === addWorkCenterModal) {
+                hideAddWorkCenterModal();
+            }
+            
+            // Team Modal
+            const createTeamModal = document.getElementById('createTeamModal');
+            if (createTeamModal && createTeamModal.classList.contains('show') && event.target === createTeamModal) {
+                closeCreateTeamModal();
+            }
+            
+            // New Request Modal
+            const newRequestModal = document.getElementById('newRequestModal');
+            if (newRequestModal && newRequestModal.classList.contains('show') && event.target === newRequestModal) {
+                closeNewRequestModal();
+            }
+        });
+
+        async function handleAddEquipment(event) {
+            event.preventDefault();
+            
+            const equipmentData = {
+                name: document.getElementById('equipmentName').value,
+                category: document.getElementById('equipmentCategory').value,
+                company: document.getElementById('equipmentCompany').value || 'My Company (San Francisco)',
+                usedBy: document.getElementById('equipmentUsedBy').value || 'Employee',
+                maintenanceTeam: document.getElementById('equipmentMaintenanceTeam').value || null,
+                assignedDate: document.getElementById('equipmentAssignedDate').value || null,
+                description: document.getElementById('equipmentDescription').value || null,
+                technician: document.getElementById('equipmentTechnician').value || null,
+                employee: document.getElementById('equipmentEmployee').value || null,
+                scrapDate: document.getElementById('equipmentScrapDate').value || null,
+                usedInLocation: document.getElementById('equipmentUsedInLocation').value || null,
+                workCenter: document.getElementById('equipmentWorkCenter').value || null,
+                // Set defaults for required fields
+                serialNumber: `EQ-${Date.now()}`,
+                department: 'General',
+                assignedTo: document.getElementById('equipmentEmployee').value || 'Unassigned',
+                location: document.getElementById('equipmentUsedInLocation').value || 'Not specified',
+                team: document.getElementById('equipmentMaintenanceTeam').value || 'General'
+            };
+            
+            try {
+                const data = await apiCall('/api/equipment', 'POST', equipmentData);
+                if (data.success) {
+                    hideAddEquipmentModal();
+                    await loadEquipmentView();
+                    alert('Equipment added successfully!');
+                }
+            } catch (error) {
+                console.error('Error adding equipment:', error);
+                alert('Error adding equipment: ' + error.message);
+            }
+        }
+
+        // Work Center Modal Functions
+        function showAddWorkCenterModal() {
+            const modal = document.getElementById('addWorkCenterModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('show');
+        }
+
+        function hideAddWorkCenterModal() {
+            const modal = document.getElementById('addWorkCenterModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('show');
+            document.getElementById('addWorkCenterForm').reset();
+        }
+
+        async function handleAddWorkCenter(event) {
+            event.preventDefault();
+            
+            const alternatives = document.getElementById('workCenterAlternatives').value;
+            const alternativeArray = alternatives ? alternatives.split(',').map(a => a.trim()).filter(a => a) : [];
+            
+            const workCenterData = {
+                name: document.getElementById('workCenterName').value,
+                code: document.getElementById('workCenterCode').value,
+                tag: document.getElementById('workCenterTag').value || null,
+                alternativeWorkcenters: alternativeArray,
+                costPerHour: parseFloat(document.getElementById('workCenterCostPerHour').value) || 0,
+                capacityTimeEfficiency: parseFloat(document.getElementById('workCenterCapacity').value) || 100,
+                oeeTarget: parseFloat(document.getElementById('workCenterOEETarget').value) || 0
+            };
+            
+            try {
+                const data = await apiCall('/api/workcenters', 'POST', workCenterData);
+                if (data.success) {
+                    hideAddWorkCenterModal();
+                    await loadWorkCenterView();
+                    alert('Work center created successfully!');
+                }
+            } catch (error) {
+                console.error('Error creating work center:', error);
+                alert('Error creating work center: ' + error.message);
+            }
+        }
+
+
+        function searchEquipment() {
+            const searchTerm = document.getElementById('equipmentSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#equipmentTableBody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        function toggleFilter(type) {
+            alert(`Filter by ${type} functionality`);
+        }
+
+        function viewEquipmentMaintenance(equipmentId) {
+            alert(`View maintenance for equipment: ${equipmentId}`);
+        }
+
+        function editRequest(requestId) {
+            alert(`Edit request: ${requestId}`);
+        }
+
+        // Maintenance functions
+        function setMaintenanceView(view, buttonElement) {
+            document.querySelectorAll('.view-toggle-btn').forEach(btn => btn.classList.remove('active'));
+            buttonElement.classList.add('active');
+            console.log('Switched to', view, 'view');
+            // List view functionality can be added here
+        }
+
+        function filterMaintenance() {
+            alert('Filter maintenance requests functionality');
+        }
+
+        function viewRequest(requestId) {
+            alert(`View maintenance request: ${requestId}`);
+        }
+
+        function viewUserRequest(requestId) {
+            alert(`View request details: ${requestId}`);
+            // This can be expanded to show a detailed view modal
+        }
+
+        function showNewRequestForm() {
+            const modal = document.getElementById('newRequestModal');
+            if (modal) {
+                modal.classList.add('show');
+            } else {
+                // Create modal if it doesn't exist
+                createNewRequestModal();
+            }
+        }
+
+        function closeNewRequestModal() {
+            const modal = document.getElementById('newRequestModal');
+            if (modal) {
+                modal.classList.remove('show');
+                modal.classList.add('hidden');
+                // Reset form if it exists
+                const form = document.querySelector('#newRequestModal form');
+                if (form) {
+                    form.reset();
+                }
+            }
+        }
+
+        function createNewRequestModal() {
+            const modal = document.createElement('div');
+            modal.id = 'newRequestModal';
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>New Maintenance Request</h3>
+                        <button class="close-modal" onclick="event.stopPropagation(); closeNewRequestModal()">×</button>
+                    </div>
+                    <form onsubmit="submitNewRequest(event)">
+                        <div class="form-group">
+                            <label for="modalEquipmentName">Equipment Name</label>
+                            <input type="text" id="modalEquipmentName" required placeholder="Enter equipment name">
+                        </div>
+                        <div class="form-group">
+                            <label for="modalRequestPriority">Priority</label>
+                            <select id="modalRequestPriority" required>
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="modalRequestDescription">Description</label>
+                            <textarea id="modalRequestDescription" rows="4" required placeholder="Describe the issue..." style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1rem; font-family: inherit;"></textarea>
+                        </div>
+                        <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                            <button type="button" class="btn-outline" onclick="closeNewRequestModal()">Cancel</button>
+                            <button type="submit" class="btn">Submit Request</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.classList.add('show');
+        }
+
+        async function submitNewRequest(event) {
+            event.preventDefault();
+            const equipmentName = document.getElementById('modalEquipmentName').value;
+            const priority = document.getElementById('modalRequestPriority').value;
+            const description = document.getElementById('modalRequestDescription').value;
+            
+            try {
+                const data = await apiCall('/api/maintenance', 'POST', {
+                    title: description.substring(0, 50) + (description.length > 50 ? '...' : ''),
+                    equipment: equipmentName,
+                    priority: priority,
+                    description: description
+                });
+                
+                alert('Request submitted successfully!');
+                
+                // Reset form
+                document.getElementById('modalEquipmentName').value = '';
+                document.getElementById('modalRequestPriority').value = 'low';
+                document.getElementById('modalRequestDescription').value = '';
+                
+                // Close modal
+                closeNewRequestModal();
+                
+                // Refresh the requests view if it's open
+                const userRequestsView = document.getElementById('user-requests-view');
+                if (userRequestsView && !userRequestsView.classList.contains('hidden')) {
+                    loadUserRequestsView();
+                }
+                
+                // Refresh admin dashboard if open
+                const adminDashboard = document.getElementById('admin-dashboard-view');
+                if (adminDashboard && !adminDashboard.classList.contains('hidden')) {
+                    const dashboardData = await loadDashboardData();
+                    // Update stats
+                    document.getElementById('admin-open-requests').textContent = dashboardData.openRequests;
+                    document.getElementById('admin-overdue').textContent = `${dashboardData.overdueRequests} Overdue`;
+                    // Update workflow
+                    document.getElementById('workflow-new').textContent = dashboardData.statusCounts.new || 0;
+                    // Update table
+                    const tbody = document.getElementById('admin-requests-table-body');
+                    if (tbody) {
+                        tbody.innerHTML = renderRequestsTable(dashboardData.recentRequests);
+                    }
+                }
+            } catch (error) {
+                alert(`Error submitting request: ${error.message}`);
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const newRequestModal = document.getElementById('newRequestModal');
+            if (newRequestModal && event.target === newRequestModal) {
+                closeNewRequestModal();
+            }
+            
+            const createTeamModal = document.getElementById('createTeamModal');
+            if (createTeamModal && event.target === createTeamModal) {
+                closeCreateTeamModal();
+            }
+        }
+
+        // Helper function to render requests table
+        function renderRequestsTable(requests) {
+            if (!requests || requests.length === 0) {
+                return '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No requests found</td></tr>';
+            }
+            
+            return requests.map(request => {
+                const priorityClass = {
+                    'critical': 'badge-danger',
+                    'high': 'badge-warning',
+                    'medium': 'badge-info',
+                    'low': 'badge-success'
+                }[request.priority] || 'badge-info';
+                
+                const statusClass = {
+                    'new': 'badge-info',
+                    'in-progress': 'badge-warning',
+                    'repaired': 'badge-success',
+                    'scrap': 'badge-danger'
+                }[request.status] || 'badge-info';
+                
+                const statusText = {
+                    'new': 'New',
+                    'in-progress': 'In Progress',
+                    'repaired': 'Repaired',
+                    'scrap': 'Scrap'
+                }[request.status] || request.status;
+                
+                const priorityText = request.priority.charAt(0).toUpperCase() + request.priority.slice(1);
+                const assignedTo = request.assignedTo ? (request.assignedTo.username || request.assignedTo.name || 'Assigned') : 'Unassigned';
+                const date = new Date(request.submittedDate).toLocaleDateString();
+                
+                return `
+                    <tr>
+                        <td>${request.requestId}</td>
+                        <td>${request.equipment}</td>
+                        <td><span class="badge ${priorityClass}">${priorityText}</span></td>
+                        <td><span class="badge ${statusClass}">${statusText}</span></td>
+                        <td>${assignedTo}</td>
+                        <td>${date}</td>
+                        <td>
+                            <button class="action-btn action-btn-view" onclick="viewRequest('${request._id}')">View</button>
+                            <button class="action-btn action-btn-edit" onclick="editRequest('${request._id}')">Edit</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Helper function to get priority badge class
+        function getPriorityBadgeClass(priority) {
+            const classes = {
+                'critical': 'badge-danger',
+                'high': 'badge-warning',
+                'medium': 'badge-info',
+                'low': 'badge-success'
+            };
+            return classes[priority] || 'badge-info';
+        }
+
+        // Helper function to get status badge class
+        function getStatusBadgeClass(status) {
+            const classes = {
+                'new': 'badge-info',
+                'in-progress': 'badge-warning',
+                'repaired': 'badge-success',
+                'scrap': 'badge-danger'
+            };
+            return classes[status] || 'badge-info';
+        }
+
+        // Helper function to format status text
+        function formatStatus(status) {
+            const statusMap = {
+                'new': 'New',
+                'in-progress': 'In Progress',
+                'repaired': 'Repaired',
+                'scrap': 'Scrap'
+            };
+            return statusMap[status] || status;
+        }
+
+        // Initialize calendar when calendar view is shown
+        function initializeCalendar(role = 'admin') {
+            let calendarDaysId, monthYearId, eventsData;
+            
+            if (role === 'admin') {
+                calendarDaysId = 'calendarDays';
+                monthYearId = 'calendarMonthYear';
+                eventsData = {
+                    3: [{ type: 'critical', title: 'Generator A - Inspection' }],
+                    5: [{ type: 'high', title: 'HVAC Unit B - Service' }],
+                    8: [{ type: 'medium', title: 'Pump System C - Check' }],
+                    12: [{ type: 'critical', title: 'Compressor D - Repair' }, { type: 'high', title: 'IT Server - Maintenance' }],
+                    15: [{ type: 'low', title: 'Routine Check' }],
+                    18: [{ type: 'medium', title: 'Equipment Audit' }],
+                    22: [{ type: 'high', title: 'Preventive Maintenance' }],
+                    25: [{ type: 'low', title: 'Safety Inspection' }],
+                    28: [{ type: 'critical', title: 'Emergency Repair' }]
+                };
+            } else if (role === 'technician') {
+                calendarDaysId = 'technicianCalendarDays';
+                monthYearId = 'technicianCalendarMonthYear';
+                eventsData = {
+                    5: [{ type: 'high', title: 'HVAC Unit B - Service' }],
+                    8: [{ type: 'medium', title: 'Pump System C - Check' }],
+                    12: [{ type: 'critical', title: 'Compressor D - Repair' }],
+                    15: [{ type: 'low', title: 'Routine Check' }],
+                    18: [{ type: 'medium', title: 'Equipment Audit' }],
+                    22: [{ type: 'high', title: 'Preventive Maintenance' }]
+                };
+            } else if (role === 'user') {
+                calendarDaysId = 'userCalendarDays';
+                monthYearId = 'userCalendarMonthYear';
+                eventsData = {
+                    3: [{ type: 'medium', title: 'Office Printer - Scheduled Maintenance' }],
+                    10: [{ type: 'low', title: 'Conference Room AC - Check' }],
+                    15: [{ type: 'medium', title: 'Equipment Inspection' }],
+                    20: [{ type: 'low', title: 'Routine Service' }]
+                };
+            }
+            
+            if (document.getElementById(calendarDaysId)) {
+                renderCalendar(calendarDaysId, monthYearId, eventsData);
+            }
+        }
+
+        function createNewRequest() {
+            alert('Create new maintenance request functionality');
+        }
+
+        function createMaintenanceReport() {
+            alert('Create maintenance report functionality');
+        }
+
+        function viewEquipment() {
+            alert('View equipment functionality');
+        }
+
+        function updateStatus() {
+            alert('Update status functionality');
+        }
+
+        function viewDocumentation() {
+            alert('View documentation functionality');
+        }
+
+        function submitMaintenanceRequest(event) {
+            event.preventDefault();
+            const equipmentName = document.getElementById('equipmentName').value;
+            const priority = document.getElementById('requestPriority').value;
+            const description = document.getElementById('requestDescription').value;
+            
+            alert(`Request submitted:\nEquipment: ${equipmentName}\nPriority: ${priority}\nDescription: ${description}`);
+            
+            // Reset form
+            document.getElementById('equipmentName').value = '';
+            document.getElementById('requestPriority').value = 'low';
+            document.getElementById('requestDescription').value = '';
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            token = null;
+            document.body.classList.remove('dashboard-mode');
+            const container = document.querySelector('.container');
+            if (container) {
+                container.style.display = 'block';
+            }
+            document.getElementById('dashboard').classList.add('hidden');
+            showLogin();
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('hidden'));
+        }
+        
+        if (token) {
+            showDashboard();
+        }
+    </script>
+</body>
+</html>
