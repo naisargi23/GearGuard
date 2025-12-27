@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # GearGuard - Maintenance Management System
 
 A comprehensive maintenance management system with role-based access control, built with Node.js, Express, MongoDB, and vanilla JavaScript.
@@ -210,3 +211,6 @@ MIT License
 
 For issues and questions, please open an issue on the repository.
 
+=======
+# GearGuard
+>>>>>>> 8e3092ef9bc8fe7a76b0b62de12fbfddf3ff5a69
